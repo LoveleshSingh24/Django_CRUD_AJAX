@@ -1,0 +1,94 @@
+<script>
+    $("#btnsave").click(function() {
+        console.log("save btn clicked");
+        let output = "";
+        
+        let sid = $("#stuid").val(); // Get the student ID
+        let nm = $("#nameid").val();
+        let em = $("#emailid").val();
+        let pw = $("#passwordid").val();
+        let csr = $("input[name=csrfmiddlewaretoken]").val();
+        
+        if (nm == "") {
+            console.log("Please Enter Field Name");
+        } else if (em == "") {
+            console.log("Please Enter Field Email");
+        } else if (pw == "") {
+            console.log("Please Enter Field Password");
+        } else {
+            // Prepare data to send, include 'id' if editing
+            let mydata = {
+                stuid: sid, // Include ID to update the existing user
+                name: nm,
+                email: em,
+                password: pw,
+                csrfmiddlewaretoken: csr
+            };
+    
+            $.ajax({
+                url: "{% url 'save' %}",
+                method: "POST",
+                data: mydata,
+                success: function(data) {
+                    let x = data.student_data;
+                    console.log(x);
+                    if (data.status == "Saved" || data.status == "Updated") {
+                        console.log("Form Submitted Successfully");
+                        for (let i = 0; i < x.length; i++) {
+                            output += "<tr><td>" + x[i].id + "</td><td>" + x[i].name + "</td><td>" + x[i].email + "</td><td>" + x[i].password + "</td><td><input type='button' class='btn btn-warning btn-sm btn-edit' value='Edit' data-sid=" + x[i].id + "><input type='button' class='btn btn-danger btn-sm btn-del' value='Delete' data-sid=" + x[i].id + "></td></tr>";
+                        }
+                        $("#tbody").html(output);
+                        $("form")[0].reset(); // Reset form after successful save or edit
+                    } else {
+                        console.log("Unable to Save");
+                    }
+                }
+            });
+        }
+    });
+    
+
+    // Delete functionality
+    $("tbody").on("click", ".btn-del", function(){
+        console.log("Delete button is clicked");
+        let id = $(this).attr("data-sid");
+        let csr = $("input[name=csrfmiddlewaretoken]").val();
+        console.log(id);
+        mydata = {sid:id, csrfmiddlewaretoken:csr};
+        mythis = this;
+        $.ajax({
+            url: "{% url 'delete' %}",
+            method : "POST",
+            data: mydata,
+            success: function(data){
+                if(data.status == 1){
+                    console.log("Data deleted Successfully");
+                    $(mythis).closest("tr").fadeOut();
+                }
+                if(data.status == 0){
+                    console.log("Unable to delete data");
+                }
+            }
+        });
+    });
+
+    // Editing functionality
+    $("tbody").on("click", ".btn-edit", function(){
+        console.log("Edit button is clicked");
+        let id = $(this).attr("data-sid");
+        let csr = $("input[name=csrfmiddlewaretoken]").val();
+        mydata = {sid:id, csrfmiddlewaretoken:csr};
+        $.ajax({
+            url: "{% url 'edit' %}",
+            method : "POST",
+            data: mydata,
+            dataType: "json", // Corrected `datatype` to `dataType`
+            success: function(data){
+                $('#stuid').val(data.id);
+                $('#nameid').val(data.name);
+                $('#emailid').val(data.email);
+                $('#passwordid').val(data.password);
+            },
+        });
+    });
+</script>
